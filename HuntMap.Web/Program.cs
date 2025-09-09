@@ -1,9 +1,9 @@
 using HuntMap.Data;
 using HuntMap.Domain;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
+using HuntMap.Web;                    // <-- add this (for PinHub)
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.UI; // optional if you later add Identity UI
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,16 +11,24 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<MapSettings>(builder.Configuration.GetSection("MapSettings"));
 
 // PostgreSQL + EF
-builder.Services.AddDbContext<HuntMapContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+builder.Services.AddDbContext<HuntMapContext>(o =>
+    o.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
-// Identity
-builder.Services.AddDefaultIdentity<ApplicationUser>(opts =>
+// Identity (no UI): use IdentityCore instead of AddDefaultIdentity
+builder.Services.AddIdentityCore<ApplicationUser>(opts =>
 {
     opts.SignIn.RequireConfirmedAccount = false;
 })
-    .AddEntityFrameworkStores<HuntMapContext>();
+.AddEntityFrameworkStores<HuntMapContext>()
+.AddSignInManager()
+.AddDefaultTokenProviders();
 
+// Cookies for auth
+builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
+    .AddCookie(IdentityConstants.ApplicationScheme);
+builder.Services.AddAuthorization();
+
+builder.Services.AddHttpClient();      // <-- needed for IHttpClientFactory
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSignalR();

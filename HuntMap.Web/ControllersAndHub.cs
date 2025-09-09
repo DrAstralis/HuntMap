@@ -27,9 +27,9 @@ public class PinsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Get([FromQuery] int[]? tiers = null)
     {
-        var userId = await GetUserIdOrDefaultAsync();
+        var userId = GetUserIdOrDefault();
         var acceptedSharesFrom = userId == Guid.Empty
-            ? Array.Empty<Guid>()
+            ? new List<Guid>() // make both branches List<Guid> to avoid CS0173
             : await _db.Shares.Where(s => s.RecipientId == userId && s.Status == ShareStatus.Accepted)
                               .Select(s => s.OwnerId).ToListAsync();
 
@@ -106,12 +106,12 @@ public class PinsController : ControllerBase
         return NoContent();
     }
 
-    private async Task<Guid> GetUserIdOrDefaultAsync()
+    private Guid GetUserIdOrDefault()
     {
         var id = _um.GetUserId(User);
-        if (id == null) return Guid.Empty;
-        return Guid.Parse(id);
+        return id == null ? Guid.Empty : Guid.Parse(id);
     }
+
 }
 
 [ApiController]

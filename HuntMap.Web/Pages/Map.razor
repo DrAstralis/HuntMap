@@ -4,6 +4,8 @@
 @inject NavigationManager Nav
 @using Microsoft.Extensions.Options
 @inject Microsoft.Extensions.Options.IOptionsMonitor<MapSettings> MapOptions
+@using System.Net.Http.Json
+
 
 <h3>Map</h3>
 
@@ -91,5 +93,4 @@
         dotNetRef?.Dispose();
     }
 
-    public record Map();
 }
