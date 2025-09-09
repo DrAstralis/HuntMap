@@ -1,0 +1,30 @@
+html, body { height: 100%; margin: 0; }
+.page { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+.sidebar { background: #1f2937; color: #fff; }
+.content { padding: 0; }
+#map-container {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 120px);
+  overflow: hidden;
+}
+#map-image {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+.pin {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid #fff;
+  box-shadow: 0 0 6px rgba(0,0,0,0.4);
+}
+.controls { padding: 10px; }
+nav ul { list-style: none; padding: 0; margin: 0; }
+nav li { margin: 8px 0; }
+a { color: #0ea5e9; text-decoration: none; }

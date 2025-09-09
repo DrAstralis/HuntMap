@@ -1,0 +1,95 @@
+@page "/map"
+@inject IHttpClientFactory ClientFactory
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@using Microsoft.Extensions.Options
+@inject Microsoft.Extensions.Options.IOptionsMonitor<MapSettings> MapOptions
+
+<h3>Map</h3>
+
+<div class="controls">
+    <label>Tier:
+        <select @onchange="OnTierChange">
+            <option value="">All</option>
+            @foreach (var t in Enumerable.Range(1,10))
+            {
+                <option value="@t">@t</option>
+            }
+        </select>
+    </label>
+</div>
+
+<div id="map-container">
+    <div id="map-image" style="background-image:url('@MapOptions.CurrentValue.ImagePath');"></div>
+    @foreach (var pin in filteredPins)
+    {
+        <div class="pin" style="left:@(pin.X*100)%; top:@(pin.Y*100)%; background-color:@pin.Color;" title="@($"{pin.Name} (Tier {pin.Tier}) x{pin.Quantity}")"></div>
+    }
+</div>
+
+@code {
+    private List<PinDto> allPins = new();
+    private List<PinDto> filteredPins = new();
+    private int? selectedTier = null;
+    private DotNetObjectReference<Map>? dotNetRef;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var client = ClientFactory.CreateClient("api");
+        var pins = await client.GetFromJsonAsync<List<PinDto>>("api/pins");
+        allPins = pins ?? new();
+        ApplyFilter();
+
+        dotNetRef = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("pinsHub.register", dotNetRef);
+    }
+
+    [JSInvokable]
+    public Task OnPinCreated(PinDto dto)
+    {
+        allPins.RemoveAll(p => p.Id == dto.Id);
+        allPins.Add(dto);
+        ApplyFilter();
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task OnPinUpdated(PinDto dto)
+    {
+        var idx = allPins.FindIndex(p => p.Id == dto.Id);
+        if (idx >= 0) allPins[idx] = dto;
+        ApplyFilter();
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public Task OnPinDeleted(Guid id)
+    {
+        allPins.RemoveAll(p => p.Id == id);
+        ApplyFilter();
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void ApplyFilter()
+    {
+        filteredPins = selectedTier.HasValue ? allPins.Where(p => p.Tier == selectedTier.Value).ToList()
+                                             : allPins.ToList();
+    }
+
+    private void OnTierChange(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString();
+        selectedTier = string.IsNullOrWhiteSpace(val) ? null : int.Parse(val!);
+        ApplyFilter();
+    }
+
+    public void Dispose()
+    {
+        dotNetRef?.Dispose();
+    }
+
+    public record Map();
+}
